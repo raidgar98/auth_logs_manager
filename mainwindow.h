@@ -8,6 +8,8 @@
 #include <QTime>
 #include <QDebug>
 
+#include <QTableWidgetItem>
+
 #define cout qDebug()
 
 namespace fs = std::experimental::filesystem;
@@ -36,6 +38,7 @@ class MainWindow : public QMainWindow
                                                   };
 
     std::map<QDate, minmax> __mRecors;
+    std::map<int, QStringList> __mBackup;
 
     ulli total_time_in_seconds = 0;
     flag first_cycle;
@@ -53,6 +56,8 @@ private slots:
 
     void on_about_triggered();
 
+    void on_records_itemDoubleClicked(QTableWidgetItem *);
+
 private:
 
     Ui::MainWindow *ui;
@@ -66,4 +71,7 @@ private:
     QString substractTime(const QTime& start, const QTime& stop) const noexcept;
 
     QString calculateOverhours(const QTime& start, const QTime& stop, const QTime day_work_time = QTime( 8, 0, 0)) noexcept;
+
+    ulli resumeTime(const QTime &start, const QTime &stop) const;
+    QTime ulli_to_QDate(const ulli& src) const;
 };

@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "editworkhours.h"
 
 #include <QMessageBox>
 #include <QTableWidgetItem>
@@ -117,22 +118,26 @@ void MainWindow::on_import_2_triggered()
 
     //prepare seconds counter
     total_time_in_seconds = 0;
-    first_cycle = true;
 
     //iterate over all days and display it
     for(const auto& var : __mRecors)
     {
         const int rows = ui->records->rowCount();
         ui->records->insertRow(rows);
-        ui->records->setItem(rows, 0, new QTableWidgetItem{QString{var.first.toString("MM-dd")}});
-        ui->records->setItem(rows, 1, new QTableWidgetItem{QString{var.second.first.toString("hh:mm:ss")}});
-        ui->records->setItem(rows, 2, new QTableWidgetItem{QString{var.second.second.toString("hh:mm:ss")}});
-        ui->records->setItem(rows, 3, new QTableWidgetItem{ substractTime(var.second.first, var.second.second) });
-        ui->records->setItem(rows, 4, new QTableWidgetItem{ calculateOverhours(var.second.first, var.second.second) });
-    }
+        auto it = __mBackup.insert(std::pair<int, QStringList>{rows, QStringList{
+                QString{var.first.toString("MM-dd")},
+                QString{var.second.first.toString("hh:mm:ss")},
+                QString{var.second.second.toString("hh:mm:ss")},
+                substractTime(var.second.first, var.second.second),
+                calculateOverhours(var.second.first, var.second.second)
+                            }});
 
-    //lock seconds counter
-    first_cycle = false;
+        ui->records->setItem(rows, 0, new QTableWidgetItem{it.first->second[0]});
+        ui->records->setItem(rows, 1, new QTableWidgetItem{it.first->second[1]});
+        ui->records->setItem(rows, 2, new QTableWidgetItem{it.first->second[2]});
+        ui->records->setItem(rows, 3, new QTableWidgetItem{it.first->second[3]});
+        ui->records->setItem(rows, 4, new QTableWidgetItem{it.first->second[4]});
+    }
 }
 
 void MainWindow::on_export_2_triggered()
@@ -176,27 +181,30 @@ void MainWindow::on_export_2_triggered()
     doc.write(1, 5, "Over Hours [ 8h ]", header);
 
     //Write all data
-    size_t row = 2;
-    for( const auto& var : __mRecors )
+    int row = 2;
+    for( const auto& var : __mBackup )
     {
-        if(row + 1 == __mRecors.size())
+        if(row + 1 == static_cast<int>(__mRecors.size()))
         {
             stnd.setBottomBorderStyle(stnd.leftBorderStyle());
             stnd_date.setBottomBorderColor(stnd_date.leftBorderStyle());
             stnd_time.setBottomBorderColor(stnd_time.leftBorderStyle());
         }
 
-        doc.write(row, 1, var.first, stnd_date);
-        doc.write(row, 2, var.second.first, stnd_time);
-        doc.write(row, 3, var.second.second, stnd_time);
-        doc.write(row, 4, substractTime(var.second.first, var.second.second), stnd_time);
-        doc.write(row, 5, calculateOverhours(var.second.first, var.second.second), stnd_time);
+        doc.write(row, 1, var.second[0], stnd_date);
+        doc.write(row, 2, var.second[1], stnd_time);
+        doc.write(row, 3, var.second[2], stnd_time);
+        doc.write(row, 4, substractTime(QTime::fromString(var.second[1], "hh:mm:ss"), QTime::fromString(var.second[2], "hh:mm:ss")), stnd_time);
+        doc.write(row, 5, calculateOverhours(QTime::fromString(var.second[1], "hh:mm:ss"), QTime::fromString(var.second[2], "hh:mm:ss")), stnd_time);
         row++;
     }
 
     //Small summarry
     doc.mergeCells(QXlsx::CellRange(row, 1, row, 4), stnd);
     stnd.setNumberFormat("#");
+    total_time_in_seconds = 0;
+    for(size_t i = 0; i < __mBackup.size(); i++)
+        total_time_in_seconds += resumeTime(QTime::fromString(__mBackup[i][1]), QTime::fromString(__mBackup[i][2]));
     doc.write(row, 5, (3600 * 8 * __mRecors.size()) - total_time_in_seconds, stnd);
     stnd.setNumberFormat("@");
     stnd.setHorizontalAlignment(QXlsx::Format::HorizontalAlignment::AlignLeft);
@@ -279,14 +287,24 @@ QString MainWindow::substractTime(const QTime &start, const QTime &stop) const n
     }
 
     if(hours < 0) return QString(QString::number(hours)+":"+QString::number(minutes)+":"+QString::number(seconds));
+    else return QTime(hours, minutes, seconds).toString("hh:mm:ss");
 }
 
 QString MainWindow::calculateOverhours(const QTime &start, const QTime &stop, const QTime day_work_time) noexcept
 {
+    const ulli tmp = resumeTime(start, stop);
+
+    if( tmp > static_cast<ulli>((day_work_time.hour() * 3600) + (day_work_time.minute() * 60) + day_work_time.second()))
+        return substractTime(day_work_time, ulli_to_QDate(tmp));
+    else
+        return "-" + substractTime(ulli_to_QDate(tmp), day_work_time);
+}
+
+ulli MainWindow::resumeTime(const QTime &start, const QTime &stop) const
+{
     int hours = stop.hour() - start.hour();
     int minutes = stop.minute() - start.minute();
     int seconds = stop.second() - start.second();
-    if(hours >= 0 && minutes >= 0 && seconds >= 0) return QTime(hours, minutes, seconds).toString("hh:mm:ss");
     if(seconds < 0)
     {
         seconds += 60;
@@ -299,11 +317,43 @@ QString MainWindow::calculateOverhours(const QTime &start, const QTime &stop, co
         hours--;
     }
 
-    const ulli tmp = static_cast<ulli>((hours * 3600) + (minutes * 60) + seconds);
-    if(first_cycle) total_time_in_seconds += tmp;
+    return static_cast<ulli>((hours * 3600) + (minutes * 60) + seconds);
 
-    if( tmp > static_cast<ulli>((day_work_time.hour() * 3600) + (day_work_time.minute() * 60) + day_work_time.second()))
-        return substractTime(day_work_time, QTime(hours, minutes, seconds));
-    else
-        return "-" + substractTime(QTime(hours, minutes, seconds), day_work_time);
+}
+
+QTime MainWindow::ulli_to_QDate(const ulli& src1) const
+{
+    int src = static_cast<int>(src1);
+    int hours = src / 3600;
+    src -= hours * 3600;
+    int minutes = src / 60;
+    src -= minutes * 60;
+    return QTime{ hours, minutes, src };
+}
+
+void MainWindow::on_records_itemDoubleClicked(QTableWidgetItem *)
+{
+    const int row = ui->records->selectedItems().front()->row();
+    if(row < 0) return;
+
+    auto it = __mBackup.find(row);
+
+    std::unique_ptr<EditWorkHours> tmp{ new EditWorkHours{
+                    QTime::fromString(it->second[1], "hh:mm:ss"),
+                    QTime::fromString(it->second[2], "hh:mm:ss"),
+                    "Edit: " + it->second[0], this } };
+    tmp->show();
+    tmp->topLevelWidget();
+    tmp->exec();
+
+    if(tmp->cancelled) return;
+
+    it->second = QStringList{ it->second[0], tmp->result.first.toString("hh:mm:ss"),
+            tmp->result.second.toString("hh:mm:ss"), substractTime(tmp->result.first, tmp->result.second),
+            calculateOverhours(tmp->result.first, tmp->result.second) };
+
+    ui->records->setItem(row, 1, new QTableWidgetItem{it->second[1]});
+    ui->records->setItem(row, 2, new QTableWidgetItem{it->second[2]});
+    ui->records->setItem(row, 3, new QTableWidgetItem{it->second[3]});
+    ui->records->setItem(row, 4, new QTableWidgetItem{it->second[4]});
 }

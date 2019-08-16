@@ -25,13 +25,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++17
 
 SOURCES += \
+        editworkhours.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
+        editworkhours.h \
         mainwindow.h
 
 FORMS += \
+        editworkhours.ui \
         mainwindow.ui
 
 LIBS += -lstdc++fs
