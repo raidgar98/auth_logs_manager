@@ -30,7 +30,7 @@ class MainWindow : public QMainWindow
 
     const std::string __mPathToLogsDirectory{"/var/log"};
     const std::string __mAuthRegex{"auth.lo"};
-    const std::string __mUnzipCommand{"gzip -d "};
+    const std::string __mUnzipCommand{"gzip -qfd "};
     const std::string __mTemporaryDirectory{"/tmp/auth_logs_process"};
     const std::map<std::string, int> __mMonths{ {"Jan", 1}, {"Feb", 2}, {"Mar", 3}, {"Apr", 4},
                                                     {"May", 5}, {"Jun", 6}, {"Jul", 7}, {"Aug", 8},

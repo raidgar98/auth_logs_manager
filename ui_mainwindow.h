@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created by: Qt User Interface Compiler version 5.12.4
+** Created by: Qt User Interface Compiler version 5.13.0
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -100,14 +100,14 @@ public:
 
     void retranslateUi(QMainWindow *MainWindow)
     {
-        MainWindow->setWindowTitle(QApplication::translate("MainWindow", "Auth Logs Manager", nullptr));
-        import_2->setText(QApplication::translate("MainWindow", "Import", nullptr));
-        export_2->setText(QApplication::translate("MainWindow", "Export", nullptr));
-        about->setText(QApplication::translate("MainWindow", "About", nullptr));
-        summ->setText(QApplication::translate("MainWindow", "Fast Summary", nullptr));
-        maxi->setText(QApplication::translate("MainWindow", "Go Maximazed", nullptr));
-        menuImport->setTitle(QApplication::translate("MainWindow", "Data", nullptr));
-        menuHelp->setTitle(QApplication::translate("MainWindow", "Help", nullptr));
+        MainWindow->setWindowTitle(QCoreApplication::translate("MainWindow", "Auth Logs Manager", nullptr));
+        import_2->setText(QCoreApplication::translate("MainWindow", "Import", nullptr));
+        export_2->setText(QCoreApplication::translate("MainWindow", "Export", nullptr));
+        about->setText(QCoreApplication::translate("MainWindow", "About", nullptr));
+        summ->setText(QCoreApplication::translate("MainWindow", "Fast Summary", nullptr));
+        maxi->setText(QCoreApplication::translate("MainWindow", "Go Maximazed", nullptr));
+        menuImport->setTitle(QCoreApplication::translate("MainWindow", "Data", nullptr));
+        menuHelp->setTitle(QCoreApplication::translate("MainWindow", "Help", nullptr));
     } // retranslateUi
 
 };

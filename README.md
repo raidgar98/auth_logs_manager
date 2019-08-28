@@ -9,3 +9,5 @@ In `.pro` file include is added, so just make sure that proper directory structu
 If compiler report error about QVector -> QList unavaiable convertion, just replace QList with QVector in pointed line.
 
 Thank you very much dbzhang800 for this masterpiece: QtXlsxWriter
+a
+a

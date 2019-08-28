@@ -71,18 +71,22 @@ void MainWindow::on_import_2_triggered()
 
     //transfer everythink to one file
     for(uint8_t i = 0; i < indexer; i++)
-        std::system(("cat " + __mTemporaryDirectory + "/auth"+std::to_string(i)+".log | cut -d '"+
-                     deviceName[0]+"' -f 1 | uniq >> ./finalForm").c_str());
+    {
+        std::string tmp("cat " + __mTemporaryDirectory + "/auth"+std::to_string(i)+".log | cut -d '"+
+                        deviceName[0]+R"(' -f 1 | uniq | sed -e 's/  / 0/g' | tr '\n' ' ' | tr -d '\0' | sed -e 's/  /\n/g' | uniq >> ./finalForm)");
+//        cout << tmp.c_str();
+        std::system(tmp.c_str());
+    }
 
     //set tokenizer and prepare read
     const boost::char_separator<char> sep{" :\n\r"};
     std::ifstream logs("./finalForm");
 
     //17 is amount of bytes per one line
-    const size_t bufferSize = 17;
+    const size_t bufferSize = 16;
 
     //create buffer
-    char* buffer = new char[bufferSize];
+    char * buffer = new char[bufferSize];
 
     //prepare space for storing
     std::array<std::string, 5> single_row;
@@ -95,15 +99,22 @@ void MainWindow::on_import_2_triggered()
         logs.read(buffer, bufferSize);
         ite++;
         //tokenize collected line
-        const std::string temporary{buffer, bufferSize};
+        std::string temporary{buffer, bufferSize};
         tokenizer tokens{temporary, sep};
         size_t i= 0;
         for(const auto& tok : tokens)
         {
             single_row[i].assign(tok.data());
             i++;
+            if(i == 5) break;
         }        
         //process acquired data
+        flag proccessable = true;
+        for(const auto& var : single_row)
+            if(var == "" || var == " ") proccessable = false;
+
+        if(!proccessable) continue;
+
         process(QDate(QDate::currentDate().year(), __mMonths.at(single_row[0]), std::stoi(single_row[1])),
                 QTime(std::stoi(single_row[2]), std::stoi(single_row[3]), std::stoi(single_row[4])));
     }
